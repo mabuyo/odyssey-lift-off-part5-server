@@ -1,25 +1,29 @@
-const { ApolloServer } = require("apollo-server");
-const typeDefs = require("./schema");
-const resolvers = require("./resolvers");
-const TrackAPI = require("./datasources/track-api");
+const { ApolloServer } = require('@apollo/server');
+const { startStandaloneServer } = require('@apollo/server/standalone');
 
-async function startApolloServer(typeDefs, resolvers) {
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers,
-    dataSources: () => {
+const typeDefs = require('./schema');
+const resolvers = require('./resolvers');
+
+const TrackAPI = require('./datasources/track-api');
+
+async function startApolloServer() {
+  const server = new ApolloServer({ typeDefs, resolvers });
+
+  const { url } = await startStandaloneServer(server, {
+    context: async () => {
       return {
-        trackAPI: new TrackAPI(),
+        dataSources: {
+          trackAPI: new TrackAPI(),
+        },
       };
     },
+    listen: { port: process.env.PORT || 4000 },
   });
 
-  const { url, port } = await server.listen({ port: process.env.PORT || 4000 });
   console.log(`
-      🚀  Server is running
-      🔉  Listening on port ${port}
-      📭  Query at ${url}
-    `);
+    🚀  Server is running
+    📭  Query at ${url}
+  `);
 }
 
-startApolloServer(typeDefs, resolvers);
+startApolloServer();
